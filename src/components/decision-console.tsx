@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Loader2,
   Sparkles,
@@ -122,6 +122,15 @@ export function DecisionConsole() {
     operationCodes?: string[];
     } | null>(null);
 
+  // Refs for step headings to manage focus
+  const step1HeadingRef = useRef<HTMLHeadingElement>(null);
+  const step2HeadingRef = useRef<HTMLHeadingElement>(null);
+  const step3HeadingRef = useRef<HTMLHeadingElement>(null);
+  const step4HeadingRef = useRef<HTMLHeadingElement>(null);
+  
+  // Track if step change was user-driven (not initial render)
+  const isUserNavigationRef = useRef(false);
+
   const selectedScenario = useMemo(
     () => demoScenarios.find((s) => s.id === selectedScenarioId),
     [selectedScenarioId]
@@ -136,6 +145,19 @@ export function DecisionConsole() {
   const sendAmount =
     Number.isFinite(parsedExecuteAmount) && parsedExecuteAmount > 0 ? parsedExecuteAmount : evaluatedAmount;
   const destinationPreview = destination.trim().toUpperCase();
+
+  // Focus management: move focus to step heading after user navigation
+  useEffect(() => {
+    if (!isUserNavigationRef.current) return;
+    
+    const headingRef = [step1HeadingRef, step2HeadingRef, step3HeadingRef, step4HeadingRef][step - 1];
+    if (headingRef?.current) {
+      headingRef.current.focus();
+    }
+    
+    // Reset flag after focusing
+    isUserNavigationRef.current = false;
+  }, [step]);
 
   useEffect(() => {
     if (step === 4 && evaluatedAmount != null && !executeAmount) {
@@ -152,6 +174,11 @@ export function DecisionConsole() {
     setSourcePublicKey("");
     setSignError(null);
     setSubmitErrorDetails(null);
+  }
+
+  function navigateToStep(newStep: number) {
+    isUserNavigationRef.current = true;
+    setStep(newStep);
   }
 
   function getExplorerUrl(hash: string) {
@@ -246,6 +273,7 @@ export function DecisionConsole() {
       setAuthorizedAuditEntryId(payload.auditEntry.id);
       setMessage("Decision recorded in audit trail.");
       pushToast("success", "Evaluation complete.");
+      // Automatic step change after decision - don't move focus
       setStep(payload.result.decision === "REQUIRE_APPROVAL" ? 3 : payload.result.decision === "BLOCK" ? 2 : 4);
     } catch (error) {
       const err = error instanceof Error ? error.message : "Unexpected failure.";
@@ -490,7 +518,7 @@ export function DecisionConsole() {
       {step === 1 ? (
         <Card>
           <CardHeader>
-            <CardTitle>Define intent</CardTitle>
+            <CardTitle ref={step1HeadingRef} tabIndex={-1}>Define intent</CardTitle>
             <CardDescription>Pick a demo scenario or generate an action with AI.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -562,7 +590,7 @@ export function DecisionConsole() {
 
             <div className="flex justify-end">
               <Button
-                onClick={() => setStep(2)}
+                onClick={() => navigateToStep(2)}
                 disabled={intentMode === "ai" && !generatedAction}
                 className="gap-2"
               >
@@ -577,7 +605,7 @@ export function DecisionConsole() {
       {step === 2 ? (
         <Card>
           <CardHeader>
-            <CardTitle>Evaluate</CardTitle>
+            <CardTitle ref={step2HeadingRef} tabIndex={-1}>Evaluate</CardTitle>
             <CardDescription>Run policy and risk checks on the selected intent.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -598,7 +626,7 @@ export function DecisionConsole() {
             <DecisionResultView result={decisionData?.result} />
 
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={() => setStep(1)} className="gap-2">
+              <Button variant="ghost" onClick={() => navigateToStep(1)} className="gap-2">
                 <ChevronLeft aria-hidden="true" className="h-4 w-4" /> Back
               </Button>
             </div>
@@ -610,7 +638,7 @@ export function DecisionConsole() {
       {step === 3 ? (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle ref={step3HeadingRef} tabIndex={-1} className="flex items-center gap-2">
               <Hand aria-hidden="true" className="h-5 w-5 text-violet-400" />
               Human approval
             </CardTitle>
@@ -625,7 +653,7 @@ export function DecisionConsole() {
                 </Button>
               </>
             ) : null}
-            <Button variant="ghost" onClick={() => setStep(2)} className="gap-2">
+            <Button variant="ghost" onClick={() => navigateToStep(2)} className="gap-2">
               <ChevronLeft aria-hidden="true" className="h-4 w-4" /> Back
             </Button>
           </CardContent>
@@ -636,7 +664,7 @@ export function DecisionConsole() {
       {step === 4 ? (
         <Card>
           <CardHeader>
-            <CardTitle>Execute payment</CardTitle>
+            <CardTitle ref={step4HeadingRef} tabIndex={-1}>Execute payment</CardTitle>
             <CardDescription>Build XDR, sign with Freighter, submit to Stellar testnet.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -786,7 +814,7 @@ export function DecisionConsole() {
               </Alert>
             ) : null}
 
-            <Button variant="ghost" onClick={() => setStep(decisionData?.result.decision === "REQUIRE_APPROVAL" ? 3 : 2)} className="gap-2">
+            <Button variant="ghost" onClick={() => navigateToStep(decisionData?.result.decision === "REQUIRE_APPROVAL" ? 3 : 2)} className="gap-2">
               <ChevronLeft aria-hidden="true" className="h-4 w-4" /> Back
             </Button>
           </CardContent>
