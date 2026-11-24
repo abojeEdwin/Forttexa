@@ -112,6 +112,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="relative flex min-h-screen">
+      {/* Skip link for keyboard navigation */}
+      <a
+        href="#main-content"
+        className="fixed left-4 top-4 z-[9999] -translate-y-32 rounded-lg bg-[hsl(var(--accent))] px-4 py-2 text-sm font-semibold text-white shadow-lg transition-transform focus:translate-y-0"
+      >
+        Skip to main content
+      </a>
+      
       <AppWorkspaceBackground />
 
       <aside className="glass-sidebar fixed inset-y-0 left-0 z-40 hidden w-[220px] flex-col lg:flex">
@@ -193,7 +201,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-6 pb-24 md:px-8 md:py-8 lg:pb-8">{children}</main>
+        <main id="main-content" role="main" tabIndex={-1} className="flex-1 px-4 py-6 pb-24 md:px-8 md:py-8 lg:pb-8">{children}</main>
       </div>
 
       <nav className="app-mobile-nav fixed inset-x-0 bottom-0 z-40 lg:hidden">
