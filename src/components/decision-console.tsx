@@ -273,8 +273,11 @@ export function DecisionConsole() {
       setAuthorizedAuditEntryId(payload.auditEntry.id);
       setMessage("Decision recorded in audit trail.");
       pushToast("success", "Evaluation complete.");
-      // Automatic step change after decision - don't move focus
-      setStep(payload.result.decision === "REQUIRE_APPROVAL" ? 3 : payload.result.decision === "BLOCK" ? 2 : 4);
+      
+      // User-triggered async transition after button click - move focus to new step heading
+      const nextStep = payload.result.decision === "REQUIRE_APPROVAL" ? 3 : payload.result.decision === "BLOCK" ? 2 : 4;
+      isUserNavigationRef.current = true;
+      setStep(nextStep);
     } catch (error) {
       const err = error instanceof Error ? error.message : "Unexpected failure.";
       setMessage(err);
